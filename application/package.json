@@ -1,0 +1,16 @@
+{
+  "name": "application",
+  "version": "1.0.0",
+  "description": "Praticing using API connect, forms and Jest test",
+  "license": "ISC",
+  "author": "Larisse Alves",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node --env-file=../.env.development index.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
