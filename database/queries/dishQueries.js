@@ -53,9 +53,109 @@ export async function getDish(currentPage = 1, limit = 5) {
 
         return result.rows;
 
-    } catch(error) {
+    } catch (error) {
         console.error('DB - getDish():', error);
         throw error;
+    }
+}
+
+export async function createDish(dishDetails = {}) {
+
+    const formDish = {
+        dish_name: dishDetails.name,
+        dish_price: dishDetails.price,
+        dish_description: dishDetails.description,
+        dish_createdAt: dishDetails.createdAt,
+        dish_isActive: dishDetails.isActive,
+        categoryId: dishDetails.categoryId
+    };
+
+    const tagsId = dishDetails.tagsId ?? [];
+    const ingredientsId = dishDetails.ingredientsId ?? [];
+
+    const client = await pool.connect();
+
+    try {
+
+        await client.query('BEGIN');
+
+        // Cria o prato
+        const result = await client.query(
+            `
+            INSERT INTO "Dish" (
+                name,
+                price,
+                description,
+                "createdAt",
+                "isActive",
+                "categoryId"
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+            `,
+            [
+                formDish.dish_name,
+                formDish.dish_price,
+                formDish.dish_description,
+                formDish.dish_createdAt,
+                formDish.dish_isActive,
+                formDish.categoryId
+            ]
+        );
+
+        const dishId = result.rows[0].id;
+
+
+        // Relaciona as tags
+        for (const tagId of tagsId) {
+
+            await client.query(
+                `
+                INSERT INTO "DishTag" (
+                    "dishId",
+                    "tagId"
+                )
+                VALUES ($1, $2)
+                `,
+                [dishId, tagId]
+            );
+
+        }
+
+
+        // Relaciona os ingredientes
+        for (const ingredientId of ingredientsId) {
+
+            await client.query(
+                `
+                INSERT INTO "DishIngredients" (
+                    "dishId",
+                    "ingredientsId"
+                )
+                VALUES ($1, $2)
+                `,
+                [dishId, ingredientId]
+            );
+
+        }
+
+
+        await client.query('COMMIT');
+
+        return dishId;
+
+    } catch (error) {
+
+        await client.query('ROLLBACK');
+
+        console.error('DB - createDish():', error);
+
+        throw error;
+
+    } finally {
+
+        client.release();
+
     }
 }
 
