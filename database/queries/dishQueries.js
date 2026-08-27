@@ -1,8 +1,12 @@
 import pool from '../../config/pgConnection.js';
 
-export async function getDish() {
-    const result = await pool.query(
-        `SELECT 
+export async function getDish(currentPage = 1, limit = 5) {
+
+    const offset = (currentPage - 1) * limit;
+
+    try {
+        const result = await pool.query(
+            `SELECT 
             "Dish".name AS "dishName", price, description, "Dish"."createdAt" AS dishCreatedAt, "Dish"."isActive" AS dishIsActive, 
             "Category".name AS "categoryName", 
             
@@ -40,11 +44,19 @@ export async function getDish() {
                 "Dish"."createdAt",
                 "Dish"."isActive",
                 "Category".name
-            `
-    );
-    console.log(result.rows);
+            
+            LIMIT $1
+            OFFSET $2
+            `, [limit, offset]
+        );
+        console.log(result.rows);
 
-    return result.rows;
+        return result.rows;
+
+    } catch(error) {
+        console.error('DB - getDish():', error);
+        throw error;
+    }
 }
 
 
