@@ -24,9 +24,9 @@ router.get(`/dishes`,
         res.status(200).json({
             data: listDishes.data,
             pagination: {
-                totalPages: Math.ceil(totalItems / limit),
-                currentPage:  currentPage,
-                limit: limit,
+                totalPages: Number(Math.ceil(totalItems / limit)),
+                currentPage:  Number(currentPage),
+                limit: Number(limit),
             }
         });
     }

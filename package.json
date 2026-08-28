@@ -5,15 +5,15 @@
     "pg-connection-string": "^2.14.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "app": "npm run dev --prefix application",
     "client": "npm run dev --prefix client ",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    
     "start": "npm run dev --prefix application"
   },
   "type": "module",
   "devDependencies": {
-    "concurrently": "^10.0.5"
+    "concurrently": "^10.0.5",
+    "jest": "^30.5.0"
   }
 }
