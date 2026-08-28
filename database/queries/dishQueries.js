@@ -1,41 +1,102 @@
 import pool from '../../config/pgConnection.js';
 
-export async function getDish(currentPage = 1, limit = 5) {
+export async function getDish(currentPage = 1, limit = 3, filters = {}) {
 
     const offset = (currentPage - 1) * limit;
 
+    //FORMAT FOR: filterTags and filterIngredients = {1, 2,3}
+    const filterTags = filters.tags?.length ? `{${filters.tags}}` : null;
+    const filterIngredients = filters.ingredients?.length ? `{${filters.ingredients}}` : null;
+    const filterCategory = filters.category || null;
+    const filterName = filters.name?.trim() || null;
+
+
     try {
+        const paginationTotalItems = await pool.query(
+        `
+            SELECT COUNT(DISTINCT "Dish".id) AS "totalItems"
+
+            FROM "Dish"
+
+            LEFT JOIN "DishTag"
+                ON "DishTag"."dishId" = "Dish".id
+
+            LEFT JOIN "Tag"
+                ON "Tag".id = "DishTag"."tagId"
+
+            LEFT JOIN "DishIngredient"
+                ON "Dish"."id" = "DishIngredient"."dishId"
+
+            WHERE
+            ($1:: integer[] IS NULL
+                    OR "Tag".id = ANY($1:: integer[])
+            ) AND
+                    
+            ($2:: integer[] IS NULL
+                    OR "DishIngredient"."dishId" = ANY($2:: integer[])
+            ) AND
+                    
+            ($3:: integer IS NULL
+                    OR "Dish"."categoryId" = $3:: integer
+            ) AND
+                    
+            ($4:: text IS NULL
+                    OR "Dish"."name" ILIKE '%' || $4:: text || '%'
+            )
+
+            `, [filterTags, filterIngredients, filterCategory, filterName]
+        );
+
         const result = await pool.query(
             `SELECT 
-            "Dish".name AS "dishName", price, description, "Dish"."createdAt" AS dishCreatedAt, "Dish"."isActive" AS dishIsActive, 
-            "Category".name AS "categoryName", 
+                "Dish".name AS "dishName", 
+                price, description, "Dish"."createdAt" AS dishCreatedAt, 
+                "Dish"."isActive" AS dishIsActive, 
+                "Category".name AS "categoryName",
             
-            ARRAY_AGG("Tag".name) AS tagsName,
-            ARRAY_AGG("Ingredient".name) AS ingredientsName,
-            ARRAY_AGG("DishImageBinary"."binaryData") AS listImages
+            ARRAY_AGG(DISTINCT "Tag".name) AS tagsName,
+            ARRAY_AGG(DISTINCT "Ingredient".name) AS ingredientsName,
+            ARRAY_AGG(DISTINCT "DishImageBinary"."binaryData") AS listImages
 
             FROM "Dish" 
 
-            INNER JOIN "Category" 
+            LEFT JOIN "Category" 
                 ON "Dish"."categoryId" = "Category".id 
             
-            INNER JOIN "DishTag" 
+            LEFT JOIN "DishTag" 
                 ON "DishTag"."dishId" = "Dish".id
 
-            INNER JOIN "Tag" 
-                ON "Tag".id = "DishTag"."tagId"
+            LEFT JOIN "Tag" 
+                ON "DishTag"."tagId" = "Tag".id 
 
-            INNER JOIN "DishIngredient"
-                ON "Dish"."id" = "DishIngredient"."dishId"
+            LEFT JOIN "DishIngredient"
+                ON "DishIngredient"."dishId" = "Dish"."id" 
 
-            INNER JOIN "Ingredient" 
-                ON "Ingredient".id = "DishIngredient"."ingredientId"
+            LEFT JOIN "Ingredient" 
+                ON "Ingredient"."id" = "DishIngredient"."ingredientId"
 
-            INNER JOIN "DishImage"
+            LEFT JOIN "DishImage"
                 ON "Dish"."id" =  "DishImage"."dishId"
             
-            INNER JOIN "DishImageBinary"
+            LEFT JOIN "DishImageBinary"
                 ON "DishImage"."dishId" = "DishImageBinary"."dishImageId"
+
+            WHERE             
+            ( $1::integer[] IS NULL
+                    OR "Tag".id = ANY($1::integer[])                    
+            ) AND
+            
+            ( $2::integer[] IS NULL 
+                OR "Ingredient"."id" = ANY($2::integer[])
+            ) AND
+
+            ( $3::integer IS NULL 
+                OR "Dish"."categoryId" = $3::integer
+            ) AND
+
+            ( $4::text IS NULL 
+                OR "Dish"."name" ILIKE '%' ||  $4::text || '%'
+            )
 
             GROUP BY
                 "Dish".name,
@@ -44,14 +105,17 @@ export async function getDish(currentPage = 1, limit = 5) {
                 "Dish"."createdAt",
                 "Dish"."isActive",
                 "Category".name
-            
-            LIMIT $1
-            OFFSET $2
-            `, [limit, offset]
-        );
-        console.log(result.rows);
 
-        return result.rows;
+            ORDER BY "Dish"."name" ASC
+
+            LIMIT $5
+            OFFSET $6
+            `, [filterTags, filterIngredients, filterCategory, filterName, limit, offset]
+        );
+
+
+        const totalItems = Number(paginationTotalItems.rows[0].totalItems);
+        return { data: result.rows, totalItems: totalItems };
 
     } catch (error) {
         console.error('DB - getDish():', error);
@@ -147,9 +211,7 @@ export async function createDish(dishDetails = {}) {
     } catch (error) {
 
         await client.query('ROLLBACK');
-
         console.error('DB - createDish():', error);
-
         throw error;
 
     } finally {
@@ -159,5 +221,3 @@ export async function createDish(dishDetails = {}) {
     }
 }
 
-
-getDish();

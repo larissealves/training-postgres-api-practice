@@ -4,13 +4,15 @@
   "description": "Praticing using API connect, forms and Jest test",
   "license": "ISC",
   "author": "Larisse Alves",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node --env-file=../.env.development index.js"
+    "dev": "node --env-file=../.env.development index.js",
+    "start": "node --env-file=../.env.production index.js"
   },
   "dependencies": {
+    "cors": "^2.8.6",
     "express": "^5.2.1"
   }
 }
