@@ -9,10 +9,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "node --env-file=../.env.development index.js",
+    "docker": "node index.js",
     "start": "node --env-file=../.env.production index.js"
   },
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pg": "^8.23.0",
+    "pg-connection-string": "^2.14.0"
   }
 }

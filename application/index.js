@@ -7,7 +7,7 @@ import ingredientsRoutes from "./routes/ingredients.js";
 import categoriesRoutes from './routes/categories.js'
 
 const port = 3000;
-const hostname = "127.0.0.1";
+const hostname = "0.0.0.0";
 
 const app = express();
 
