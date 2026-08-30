@@ -53,10 +53,19 @@ export async function getDish(currentPage = 1, limit = 3, filters = {}) {
                 price, description, "Dish"."createdAt" AS dishCreatedAt, 
                 "Dish"."isActive" AS dishIsActive, 
                 "Category".name AS "categoryName",
+                "Dish"."id",
             
             ARRAY_AGG(DISTINCT "Tag".name) AS tagsName,
             ARRAY_AGG(DISTINCT "Ingredient".name) AS ingredientsName,
-            ARRAY_AGG(DISTINCT "DishImageBinary"."binaryData") AS listImages
+            
+            COALESCE(
+                ARRAY_AGG(
+                    DISTINCT "DishImageBinary"."binaryData"
+                ) FILTER (
+                    WHERE "DishImageBinary"."binaryData" IS NOT NULL
+                ),
+                '{}'
+            ) AS "listImages"
 
             FROM "Dish" 
 
@@ -104,7 +113,8 @@ export async function getDish(currentPage = 1, limit = 3, filters = {}) {
                 "Dish".description,
                 "Dish"."createdAt",
                 "Dish"."isActive",
-                "Category".name
+                "Category".name,
+                "Dish"."id"
 
             ORDER BY "Dish"."name" ASC
 
@@ -112,7 +122,6 @@ export async function getDish(currentPage = 1, limit = 3, filters = {}) {
             OFFSET $6
             `, [filterTags, filterIngredients, filterCategory, filterName, limit, offset]
         );
-
 
         const totalItems = Number(paginationTotalItems.rows[0].totalItems);
         return { data: result.rows, totalItems: totalItems };
@@ -129,7 +138,7 @@ export async function createDish(dishDetails = {}) {
         dish_name: dishDetails.name,
         dish_price: dishDetails.price,
         dish_description: dishDetails.description,
-        dish_createdAt: dishDetails.createdAt,
+        dish_createdAt: new Date(),
         dish_isActive: dishDetails.isActive,
         categoryId: dishDetails.categoryId
     };
@@ -177,9 +186,10 @@ export async function createDish(dishDetails = {}) {
                 `
                 INSERT INTO "DishTag" (
                     "dishId",
-                    "tagId"
+                    "tagId",
+                    "updatedAt"
                 )
-                VALUES ($1, $2)
+                VALUES ($1, $2, NOW())
                 `,
                 [dishId, tagId]
             );
@@ -192,11 +202,12 @@ export async function createDish(dishDetails = {}) {
 
             await client.query(
                 `
-                INSERT INTO "DishIngredients" (
+                INSERT INTO "DishIngredient" (
                     "dishId",
-                    "ingredientsId"
+                    "ingredientId",
+                    "updatedAt"
                 )
-                VALUES ($1, $2)
+                VALUES ($1, $2, NOW())
                 `,
                 [dishId, ingredientId]
             );

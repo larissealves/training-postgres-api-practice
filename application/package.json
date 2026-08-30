@@ -15,6 +15,7 @@
   "dependencies": {
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "multer": "^2.3.0",
     "pg": "^8.23.0",
     "pg-connection-string": "^2.14.0"
   }

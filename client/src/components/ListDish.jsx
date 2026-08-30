@@ -11,7 +11,13 @@ export function ListDish() {
     const [paginationTotalPages, setPaginationTotalPages] = useState(0);
     const PAGINATION_LIMIT = 4;
 
-    const [messageAlert, setMessageAlert] = useState('');
+    const [messageAlert, setMessageAlert] = useState({
+        message: "",
+        type: "alert", //alert, error, success
+    });
+
+    const [showForm, setShowForm] = useState(false);
+    const [showContent, setShowContent] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const [formDish, setFormDish] = useState({
@@ -30,6 +36,8 @@ export function ListDish() {
         category: '',
         name: '',
     });
+
+    const [filterName, setFilterName] =  useState();
 
     const fetchDropdowns = async () => {
         try {
@@ -62,7 +70,7 @@ export function ListDish() {
                 fetch(`http://127.0.0.1:3000/api/dishes?tags=${filterByTags}&ingredients=${filterByingredients}&category=${filters.category}&name=${filterByName}&currentPage=${currentPage}&limit=${PAGINATION_LIMIT}`),
             ]);
             const data = await dataListDish.json();
-
+            console.log(data);
             setListDish(data.data);
             setCurrentPage(data.pagination.currentPage);
             setPaginationTotalPages(data.pagination.totalPages);
@@ -72,19 +80,16 @@ export function ListDish() {
         }
     };
 
-
-    const handleSubmit = async () => {
-        setLoading(true);
-        setMessageAlert("");
-
+    const checkForm = () => {
         if (!formDish.name.trim() ||
             !formDish.description.trim() ||
             !formDish.price ||
             !formDish.categoryId) {
-            setMessageAlert("Nome, preço, descrição e categoria são obrigatórios");
+            setMessageAlert({ message: 'Nome, preço, descrição e categoria são obrigatórios', type: 'error' });
             setLoading(false);
             return null;
         }
+
         const formData = new FormData();
 
         formData.append('name', formDish.name);
@@ -95,23 +100,40 @@ export function ListDish() {
         formData.append("tagsId", JSON.stringify(formDish.tagsId));
         formData.append('ingredientsId', JSON.stringify(formDish.ingredientsId));
 
-        console.log(formData);
+        return formData;
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        setLoading(true);
+        setMessageAlert({ message: "", type: "" });
+        const form = checkForm();
+
+        if (!form) {
+            setLoading(false);
+            return;
+        }
+
         try {
             const res = await fetch(`
                 http://127.0.0.1:3000/api/dish`,
                 {
                     method: "POST",
-                    body: formData,
+                    body: form,
                 }
             );
 
-            //fetchDishes();
-            console.log(formData);
+            if (!res.ok) {
+                setMessageAlert({ message: 'Error ao salvar o prato', type: 'error' });
+            }
 
+            setMessageAlert({ message: 'SUCCESS', type: 'success' });
+            fetchDishes();
             clearForm();
 
         } catch (error) {
-            setMessageAlert("erro aos salvar o prato");
+            setMessageAlert({ message: 'Error ao salvar o prato', type: 'error' });
             console.log("erro aos salvar o prato", error);
         } finally {
             setLoading(false);
@@ -128,9 +150,27 @@ export function ListDish() {
         ingredientsId: [],
     });
 
+    const filterByName = () => {
+        setFilters({...filters, name: filterName});
+        setCurrentPage(1);
+    }
+
     useEffect(() => {
         fetchDropdowns();
     }, []);
+
+    useEffect(() => {
+        if (!messageAlert) return;
+
+        setShowContent(true);
+
+        const timer = setTimeout(() => {
+            setShowContent(false);
+            setMessageAlert("");
+        }, 3000);
+
+        return () => clearTimeout(timer);
+    }, [messageAlert]);
 
     useEffect(() => {
         fetchDishes();
@@ -138,328 +178,360 @@ export function ListDish() {
 
 
     return (
-        <div className="min-h-screen bg-gray-100 p-6">
-            {/* ============= START FORM ============= */}
-            <form
-                onSubmit={handleSubmit}
-                className="mx-auto mb-8 max-w-4xl rounded-2xl bg-white p-6 shadow-md"
-            >
-                {/* Header */}
-                <div className="mb-6 border-b border-gray-100 pb-4">
-                    <h2 className="text-2xl font-bold text-gray-800">
-                        Cadastrar prato
-                    </h2>
 
-                    <p className="mt-1 text-sm text-gray-500">
-                        Preencha as informações do prato abaixo.
-                    </p>
-                </div>
+        <div className="min-h-screen bg-gray-100 p-3 sm:p-4">
 
-                {/* Nome + Preço */}
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {/* ================= BOTÃO FORM ================= */}
+            <div className="mx-auto mb-3 flex max-w-4xl justify-end">
+                <button
+                    type="button"
+                    onClick={() => setShowForm((prev) => !prev)}
+                    className="rounded-md bg-gray-800 px-4 py-2 text-xs font-semibold text-white transition 
+                    hover:bg-gray-700 cursor-pointer "
+                >
+                    {showForm ? "Esconder formulário" : "+ Adicionar prato"}
+                </button>
+            </div>
 
-                    {/* Nome */}
-                    <div>
-                        <label
-                            htmlFor="dish-name"
-                            className="mb-2 block text-sm font-semibold text-gray-700"
-                        >
-                            Nome
-                        </label>
+            {/* ================= FORM ================= */}
+            {showForm && (
+                <form
+                    onSubmit={handleSubmit}
+                    className="mx-auto mb-5 max-w-4xl rounded-xl bg-white p-4 shadow-sm"
+                >
+                    {/* Header */}
+                    <div className="mb-4 border-b border-gray-100 pb-3">
+                        <h2 className="text-xl font-bold text-gray-800">
+                            Cadastrar prato
+                        </h2>
 
-                        <input
-                            id="dish-name"
-                            type="text"
-                            disabled={loading}
-                            value={formDish.name ?? ""}
-                            placeholder="Ex.: Pizza Margherita"
-                            onChange={(e) =>
-                                setFormDish((prev) => ({
-                                    ...prev,
-                                    name: e.target.value,
-                                }))
-                            }
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
-                        />
+                        <p className="mt-0.5 text-xs text-gray-500">
+                            Preencha as informações do prato abaixo.
+                        </p>
                     </div>
 
-                    {/* Preço */}
-                    <div>
-                        <label
-                            htmlFor="dish-price"
-                            disabled={loading}
-                            className="mb-2 block text-sm font-semibold text-gray-700"
-                        >
-                            Preço
-                        </label>
+                    {/* Nome + Preço */}
+                    <div className="grid grid-cols-3 gap-3 md:grid-cols-3">
 
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-                                R$
-                            </span>
+                        {/* Nome */}
+                        <div>
+                            <label
+                                htmlFor="dish-name"
+                                className="mb-1 block text-xs font-semibold text-gray-700"
+                            >
+                                Nome
+                            </label>
 
                             <input
-                                id="dish-price"
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={formDish.price ?? ""}
-                                placeholder="0,00"
+                                id="dish-name"
+                                type="text"
+                                disabled={loading}
+                                value={formDish.name ?? ""}
+                                placeholder="Ex.: Pizza Margherita"
+                                onChange={(e) =>
+                                    setFormDish((prev) => ({
+                                        ...prev,
+                                        name: e.target.value,
+                                    }))
+                                }
+                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
+                            />
+                        </div>
+
+                        {/* Preço */}
+                        <div>
+                            <label
+                                htmlFor="dish-price"
+                                className="mb-1 block text-xs font-semibold text-gray-700"
+                            >
+                                Preço
+                            </label>
+
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
+                                    R$
+                                </span>
+
+                                <input
+                                    id="dish-price"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={formDish.price ?? ""}
+                                    placeholder="0,00"
+                                    disabled={loading}
+                                    onChange={(e) =>
+                                        setFormDish((prev) => ({
+                                            ...prev,
+                                            price: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
+                                />
+                            </div>
+                        </div>
+
+
+                        {/* Categoria */}
+                        <div className="">
+                            <label
+                                htmlFor="dish-category"
+                                className="mb-1 block text-xs font-semibold text-gray-700"
+                            >
+                                Categoria
+                            </label>
+
+                            <select
+                                id="dish-category"
+                                value={formDish.categoryId ?? ""}
                                 disabled={loading}
                                 onChange={(e) =>
                                     setFormDish((prev) => ({
                                         ...prev,
-                                        price: e.target.value,
+                                        categoryId: e.target.value,
                                     }))
                                 }
-                                className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
-                            />
+                                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
+                            >
+                                <option value="">
+                                    Selecione uma categoria
+                                </option>
+
+                                {listCategories.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
-                </div>
 
-                {/* Descrição */}
-                <div className="mt-5">
-                    <label
-                        htmlFor="dish-description"
-                        className="mb-2 block text-sm font-semibold text-gray-700"
-                    >
-                        Descrição
-                    </label>
-
-                    <textarea
-                        id="dish-description"
-                        rows={4}
-                        value={formDish.description ?? ""}
-                        disabled={loading}
-                        placeholder="Descreva os ingredientes e características do prato..."
-                        onChange={(e) =>
-                            setFormDish((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                            }))
-                        }
-                        className="w-full resize-none rounded-lg border border-gray-300 px-4 py-2.5 text-sm outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
-                    />
-                </div>
-
-                {/* Categoria */}
-                <div className="mt-5">
-                    <label
-                        htmlFor="dish-category"
-                        className="mb-2 block text-sm font-semibold text-gray-700"
-                    >
-                        Categoria
-                    </label>
-
-                    <select
-                        id="dish-category"
-                        value={formDish.categoryId ?? ""}
-                        disabled={loading}
-                        onChange={(e) =>
-                            setFormDish((prev) => ({
-                                ...prev,
-                                categoryId: e.target.value,
-                            }))
-                        }
-                        className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
-                    >
-                        <option value="">
-                            Selecione uma categoria
-                        </option>
-
-                        {listCategories.map((item) => (
-                            <option key={item.id} value={item.id}>
-                                {item.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Tags + Ingredientes */}
-                <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-
-                    {/* Tags */}
-                    <div>
+                    {/* Descrição */}
+                    <div className="mt-3">
                         <label
-                            htmlFor="dish-tags"
-                            className="mb-2 block text-sm font-semibold text-gray-700"
+                            htmlFor="dish-description"
+                            className="mb-1 block text-xs font-semibold text-gray-700"
                         >
-                            Tags
+                            Descrição
                         </label>
 
-                        <select
-                            id="dish-tags"
-                            multiple
-                            value={formDish.tagsId ?? []}
+                        <textarea
+                            id="dish-description"
+                            rows={2}
+                            value={formDish.description ?? ""}
                             disabled={loading}
+                            placeholder="Descreva os ingredientes e características do prato..."
                             onChange={(e) =>
                                 setFormDish((prev) => ({
                                     ...prev,
-                                    tagsId: Array.from(
-                                        e.target.selectedOptions,
-                                        (option) => Number(option.value)
-                                    ),
+                                    description: e.target.value,
                                 }))
                             }
-                            className="h-40 w-full rounded-lg border border-gray-300 bg-white p-2 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
-                        >
-                            {listTags.map((item) => (
-                                <option
-                                    key={item.id}
-                                    value={item.id}
-                                    className="rounded px-2 py-1"
-                                >
-                                    {item.name}
-                                </option>
-                            ))}
-                        </select>
-
-                        <p className="mt-1 text-xs text-gray-400">
-                            Segure Ctrl/Cmd para selecionar várias.
-                        </p>
-                    </div>
-
-                    {/* Ingredientes */}
-                    <div>
-                        <label
-                            htmlFor="dish-ingredients"
-                            className="mb-2 block text-sm font-semibold text-gray-700"
-                        >
-                            Ingredientes
-                        </label>
-
-                        <select
-                            id="dish-ingredients"
-                            multiple
-                            value={formDish.ingredientsId ?? []}
-                            disabled={loading}
-                            onChange={(e) =>
-                                setFormDish((prev) => ({
-                                    ...prev,
-                                    ingredientsId: Array.from(
-                                        e.target.selectedOptions,
-                                        (option) => Number(option.value)
-                                    ),
-                                }))
-                            }
-                            className="h-40 w-full rounded-lg border border-gray-300 bg-white p-2 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
-                        >
-                            {listIngredients.map((item) => (
-                                <option
-                                    key={item.id}
-                                    value={item.id}
-                                    className="rounded px-2 py-1"
-                                >
-                                    {item.name}
-                                </option>
-                            ))}
-                        </select>
-
-                        <p className="mt-1 text-xs text-gray-400">
-                            Segure Ctrl/Cmd para selecionar várias.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Status */}
-                <div className="mt-5 flex items-center justify-between rounded-lg bg-gray-50 p-4">
-                    <div>
-                        <p className="text-sm font-semibold text-gray-700">
-                            Prato ativo
-                        </p>
-
-                        <p className="text-xs text-gray-500">
-                            Define se o prato ficará disponível.
-                        </p>
-                    </div>
-
-                    <label className="relative inline-flex cursor-pointer items-center">
-                        <input
-                            type="checkbox"
-                            checked={formDish.isActive}
-                            disabled={loading}
-                            onChange={(e) =>
-                                setFormDish((prev) => ({
-                                    ...prev,
-                                    isActive: e.target.checked,
-                                }))
-                            }
-                            className="peer sr-only"
+                            className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
                         />
-
-                        <div className="h-6 w-11 rounded-full bg-gray-300 transition peer-checked:bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full" />
-                    </label>
-                </div>
-
-                {/* Mensagem */}
-                {messageAlert && (
-                    <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                        {messageAlert}
                     </div>
-                )}
 
-                {/* Footer */}
-                <div className="mt-6 flex justify-end border-t border-gray-100 pt-5">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="rounded-lg bg-gray-800 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {loading ? "Salvando..." : "Salvar prato"}
-                    </button>
-                </div>
-            </form>
-            {/* ============= END FORM ============= */}
 
-            
+                    {/* Tags + Ingredientes */}
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+
+                        {/* Tags */}
+                        <div>
+                            <label
+                                htmlFor="dish-tags"
+                                className="mb-1 block text-xs font-semibold text-gray-700"
+                            >
+                                Tags
+                            </label>
+
+                            <select
+                                id="dish-tags"
+                                multiple
+                                value={formDish.tagsId ?? []}
+                                disabled={loading}
+                                onChange={(e) =>
+                                    setFormDish((prev) => ({
+                                        ...prev,
+                                        tagsId: Array.from(
+                                            e.target.selectedOptions,
+                                            (option) => Number(option.value)
+                                        ),
+                                    }))
+                                }
+                                className="h-24 w-full rounded-md border border-gray-300 bg-white p-1.5 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
+                            >
+                                {listTags.map((item) => (
+                                    <option
+                                        key={item.id}
+                                        value={item.id}
+                                    >
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <p className="mt-1 text-[11px] text-gray-400">
+                                Ctrl/Cmd para selecionar várias.
+                            </p>
+                        </div>
+
+                        {/* Ingredientes */}
+                        <div>
+                            <label
+                                htmlFor="dish-ingredients"
+                                className="mb-1 block text-xs font-semibold text-gray-700"
+                            >
+                                Ingredientes
+                            </label>
+
+                            <select
+                                id="dish-ingredients"
+                                multiple
+                                value={formDish.ingredientsId ?? []}
+                                disabled={loading}
+                                onChange={(e) =>
+                                    setFormDish((prev) => ({
+                                        ...prev,
+                                        ingredientsId: Array.from(
+                                            e.target.selectedOptions,
+                                            (option) => Number(option.value)
+                                        ),
+                                    }))
+                                }
+                                className="h-24 w-full rounded-md border border-gray-300 bg-white p-1.5 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
+                            >
+                                {listIngredients.map((item) => (
+                                    <option
+                                        key={item.id}
+                                        value={item.id}
+                                    >
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            <p className="mt-1 text-[11px] text-gray-400">
+                                Ctrl/Cmd para selecionar várias.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="mt-3 flex items-center justify-between rounded-md bg-gray-50 px-3 py-2.5">
+                        <div>
+                            <p className="text-xs font-semibold text-gray-700">
+                                Prato ativo
+                            </p>
+
+                            <p className="text-[11px] text-gray-500">
+                                Define se o prato ficará disponível.
+                            </p>
+                        </div>
+
+                        <label className="relative inline-flex cursor-pointer items-center">
+                            <input
+                                type="checkbox"
+                                checked={formDish.isActive}
+                                disabled={loading}
+                                onChange={(e) =>
+                                    setFormDish((prev) => ({
+                                        ...prev,
+                                        isActive: e.target.checked,
+                                    }))
+                                }
+                                className="peer sr-only"
+                            />
+
+                            <div className="h-5 w-9 rounded-full bg-gray-300 transition peer-checked:bg-gray-700 peer-focus:ring-2 peer-focus:ring-gray-300 after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full" />
+                        </label>
+                    </div>
+
+                    {/* Mensagem */}
+                    {messageAlert.message && showContent && (
+                        <div
+                            className={`mt-3 rounded-md border px-3 py-2 text-xs ${messageAlert.type === "error"
+                                ? "border-red-200 bg-red-50 text-red-600"
+                                : "border-green-200 bg-green-50 text-green-600"
+                                }`}
+                        >
+                            {messageAlert.message}
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="mt-4 flex justify-end border-t border-gray-100 pt-3">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="rounded-md bg-gray-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-gray-700 
+                            disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer "
+                        >
+                            {loading ? "Salvando..." : "Salvar prato"}
+                        </button>
+                    </div>
+                </form>
+            )}
+
             {/* ================= FILTROS ================= */}
-            <section className="mx-auto mb-8 max-w-6xl rounded-2xl bg-white p-6 shadow-sm">
+            <section className="mx-auto mb-5 max-w-6xl rounded-xl bg-white p-4 shadow-sm">
 
-                <div className="mb-5">
-                    <h2 className="text-lg font-bold text-gray-800">
+                <div className="mb-3">
+                    <h2 className="text-base font-bold text-gray-800">
                         Filtrar pratos
                     </h2>
 
-                    <p className="mt-1 text-sm text-gray-500">
-                        Use os filtros abaixo para encontrar um prato.
+                    <p className="mt-0.5 text-xs text-gray-500">
+                        Use os filtros para encontrar um prato.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
 
                     {/* Nome */}
                     <div>
                         <label
                             htmlFor="name-filter"
-                            className="mb-2 block text-sm font-semibold text-gray-700"
+                            className="mb-1 block text-xs font-semibold text-gray-700"
                         >
                             Nome
                         </label>
 
-                        <input
-                            id="name-filter"
-                            type="text"
-                            value={filters.name ?? ""}
-                            disabled={loading}
-                            onChange={(e) => {
-                                setFilters((prev) => ({
-                                    ...prev,
-                                    name: e.target.value,
-                                }));
+                        <div className="relative">
+                            <input
+                                id="name-filter"
+                                type="text"
+                                value={filterName}
+                                disabled={loading}
+                                onChange={(e) => setFilterName(e.target.value)}
+                                
+                                placeholder="Buscar por nome..."
+                                className="w-full rounded-md border border-gray-300 
+                                py-2 pl-3 pr-10 text-sm text-gray-700 outline-none 
+                                transition placeholder:text-gray-400 focus:border-gray-500 
+                                focus:ring-1 focus:ring-gray-200"
+                            />
 
-                                setCurrentPage(1);
-                            }}
-                            placeholder="Buscar por nome..."
-                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
-                        />
+                            <button
+                                type="button"
+                                disabled={loading || !filterName}
+                                title="Digite o nome e clique para buscar"
+                                onClick={filterByName}
+                                className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 
+                                items-center justify-center rounded-md 
+                                text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 
+                                disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer "
+                                aria-label="Pesquisar"
+                            >
+                                🔍
+                            </button>
+                        </div>
                     </div>
 
                     {/* Categoria */}
                     <div>
                         <label
                             htmlFor="category-filter"
-                            className="mb-2 block text-sm font-semibold text-gray-700"
+                            className="mb-1 block text-xs font-semibold text-gray-700"
                         >
                             Categoria
                         </label>
@@ -476,7 +548,7 @@ export function ListDish() {
 
                                 setCurrentPage(1);
                             }}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
                         >
                             <option value="">
                                 Todas as categorias
@@ -494,7 +566,7 @@ export function ListDish() {
                     <div>
                         <label
                             htmlFor="tag-filter"
-                            className="mb-2 block text-sm font-semibold text-gray-700"
+                            className="mb-1 block text-xs font-semibold text-gray-700"
                         >
                             Tags
                         </label>
@@ -517,29 +589,21 @@ export function ListDish() {
 
                                 setCurrentPage(1);
                             }}
-                            className="h-28 w-full rounded-lg border border-gray-300 bg-white p-2 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                            className="h-20 w-full rounded-md border border-gray-300 bg-white p-1.5 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
                         >
                             {listTags.map((item) => (
-                                <option
-                                    key={item.id}
-                                    value={item.id}
-                                    className="rounded px-2 py-1"
-                                >
+                                <option key={item.id} value={item.id}>
                                     {item.name}
                                 </option>
                             ))}
                         </select>
-
-                        <p className="mt-1 text-xs text-gray-400">
-                            Selecione uma ou mais tags.
-                        </p>
                     </div>
 
                     {/* Ingredientes */}
                     <div>
                         <label
                             htmlFor="ingredient-filter"
-                            className="mb-2 block text-sm font-semibold text-gray-700"
+                            className="mb-1 block text-xs font-semibold text-gray-700"
                         >
                             Ingredientes
                         </label>
@@ -562,31 +626,23 @@ export function ListDish() {
 
                                 setCurrentPage(1);
                             }}
-                            className="h-28 w-full rounded-lg border border-gray-300 bg-white p-2 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-2 focus:ring-gray-200"
+                            className="h-20 w-full rounded-md border border-gray-300 bg-white p-1.5 text-sm text-gray-700 outline-none transition focus:border-gray-500 focus:ring-1 focus:ring-gray-200"
                         >
                             {listIngredients.map((item) => (
-                                <option
-                                    key={item.id}
-                                    value={item.id}
-                                    className="rounded px-2 py-1"
-                                >
+                                <option key={item.id} value={item.id}>
                                     {item.name}
                                 </option>
                             ))}
                         </select>
-
-                        <p className="mt-1 text-xs text-gray-400">
-                            Selecione um ou mais ingredientes.
-                        </p>
                     </div>
                 </div>
 
-                {/* Limpar filtros */}
+                {/* Limpar */}
                 {(filters.name ||
                     filters.category ||
                     filters.tags?.length ||
                     filters.ingredients?.length) ? (
-                    <div className="mt-5 flex justify-end">
+                    <div className="mt-3 flex justify-end">
                         <button
                             type="button"
                             disabled={loading}
@@ -597,10 +653,12 @@ export function ListDish() {
                                     ingredients: [],
                                     category: "",
                                 });
-
+                                setFilterName("");
                                 setCurrentPage(1);
                             }}
-                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                            className="rounded-md border border-gray-300 px-3 
+                            py-1.5 text-xs font-medium text-gray-600 
+                            transition hover:bg-gray-50 cursor-pointer"
                         >
                             Limpar filtros
                         </button>
@@ -609,56 +667,56 @@ export function ListDish() {
             </section>
 
 
-            {/* ================= LISTA DE PRATOS ================= */}
-            <section className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* ================= LISTA ================= */}
+            <section className="mx-auto grid max-w-6xl gap-4 grid-cols-2 lg:grid-cols-4">
 
                 {listDish.length > 0 ? (
                     listDish.map((item) => (
                         <article
                             key={item.id}
-                            className="flex flex-col rounded-2xl bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                            className="flex flex-col rounded-xl bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                         >
 
                             {/* Nome */}
-                            <div className="mb-5 border-b border-gray-100 pb-4">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            <div className="mb-3 border-b border-gray-100 pb-2">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                     Nome
                                 </p>
 
-                                <h3 className="mt-1 break-words text-xl font-bold text-gray-800">
+                                <h3 className="mt-0.5 break-words text-base font-bold text-gray-800">
                                     {item.dishName}
                                 </h3>
                             </div>
 
                             {/* Descrição */}
-                            <div className="mb-5">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            <div className="mb-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                     Descrição
                                 </p>
 
-                                <p className="mt-1 break-words text-sm leading-relaxed text-gray-600">
+                                <p className="mt-0.5 line-clamp-2 break-words text-xs leading-relaxed text-gray-600">
                                     {item.description}
                                 </p>
                             </div>
 
                             {/* Preço + Data */}
-                            <div className="mb-5 grid grid-cols-2 gap-4">
+                            <div className="mb-3 grid grid-cols-2 gap-3">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                         Preço
                                     </p>
 
-                                    <p className="mt-1 font-semibold text-gray-800">
+                                    <p className="mt-0.5 text-sm font-semibold text-gray-800">
                                         R$ {item.price}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                         Criado em
                                     </p>
 
-                                    <p className="mt-1 text-sm text-gray-600">
+                                    <p className="mt-0.5 text-xs text-gray-600">
                                         {new Date(
                                             item.dishcreatedat
                                         ).toLocaleDateString("pt-BR")}
@@ -667,27 +725,27 @@ export function ListDish() {
                             </div>
 
                             {/* Categoria */}
-                            <div className="mb-5">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            <div className="mb-3">
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                     Categoria
                                 </p>
 
-                                <span className="mt-2 inline-block rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
+                                <span className="mt-1 inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
                                     {item.categoryName}
                                 </span>
                             </div>
 
                             {/* Tags */}
-                            <div className="mb-5">
-                                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            <div className="mb-3">
+                                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                     Tags
                                 </p>
 
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1">
                                     {item.tagsname?.map((tag, index) => (
                                         <span
                                             key={index}
-                                            className="rounded-full bg-gray-800 px-3 py-1 text-xs font-medium text-white"
+                                            className="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-medium text-white"
                                         >
                                             {tag}
                                         </span>
@@ -696,17 +754,17 @@ export function ListDish() {
                             </div>
 
                             {/* Ingredientes */}
-                            <div className="mb-5">
-                                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                            <div className="mb-3">
+                                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                     Ingredientes
                                 </p>
 
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1">
                                     {item.ingredientsname?.map(
                                         (ingredient, index) => (
                                             <span
                                                 key={index}
-                                                className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs text-gray-600"
+                                                className="rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] text-gray-600"
                                             >
                                                 {ingredient}
                                             </span>
@@ -717,23 +775,37 @@ export function ListDish() {
 
                             {/* Imagens */}
                             <div className="mt-auto">
-                                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                                     Imagens
                                 </p>
 
-                                <div className="flex h-32 items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-400">
-                                    Imagens aqui
+                                <div className="flex h-28 items-center justify-center overflow-hidden rounded-md bg-gray-50 w-30 object-cover">
+                                    {item.listImages?.length > 0 ? (
+                                        item.listImages.map((img, index) => (
+
+                                            <img
+                                                src={img}
+                                                alt={`${item.dishName} - imagem ${index + 1}`}
+                                                className="h-full w-full object-cover"
+                                            />
+
+                                        ))
+                                    ) : (
+                                        <span className="text-xs text-gray-400">
+                                            Sem imagem
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </article>
                     ))
                 ) : (
-                    <div className="col-span-full rounded-2xl bg-white px-6 py-12 text-center shadow-sm">
-                        <p className="text-lg font-semibold text-gray-700">
+                    <div className="col-span-full rounded-xl bg-white px-4 py-10 text-center shadow-sm">
+                        <p className="text-base font-semibold text-gray-700">
                             Nenhum prato encontrado
                         </p>
 
-                        <p className="mt-1 text-sm text-gray-400">
+                        <p className="mt-1 text-xs text-gray-400">
                             Tente alterar os filtros da pesquisa.
                         </p>
                     </div>
@@ -742,7 +814,7 @@ export function ListDish() {
 
 
             {/* ================= PAGINAÇÃO ================= */}
-            <div className="mx-auto mt-8 flex max-w-6xl items-center justify-center gap-4">
+            <div className="mx-auto mt-5 flex max-w-6xl items-center justify-center gap-2">
 
                 <button
                     type="button"
@@ -750,13 +822,16 @@ export function ListDish() {
                         setCurrentPage((prev) => Math.max(prev - 1, 1))
                     }
                     disabled={currentPage === 1 || loading}
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-md border border-gray-300 bg-white px-3 
+                    py-1.5 text-xs font-medium text-gray-700 transition 
+                    hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer "
                 >
                     ← Anterior
                 </button>
 
-                <div className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm">
-                    Página {currentPage} de {paginationTotalPages}
+                <div className="rounded-md bg-white px-3 py-1.5 text-xs 
+                font-medium text-gray-700 shadow-sm">
+                    {currentPage} / {paginationTotalPages}
                 </div>
 
                 <button
@@ -771,11 +846,14 @@ export function ListDish() {
                         paginationTotalPages === 0 ||
                         loading
                     }
-                    className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-md border border-gray-300 bg-white px-3 py-1.5 
+                    text-xs font-medium text-gray-700 transition hover:bg-gray-50 
+                    disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer "
                 >
                     Próxima →
                 </button>
             </div>
         </div>
+
     );
 }

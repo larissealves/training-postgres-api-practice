@@ -1,6 +1,8 @@
 import express from "express";
 import {getDish, createDish} from '../../database/queries/dishQueries.js'
+import multer from "multer";
 
+const upload = multer();
 const router = express.Router();
 
 router.get(`/dishes`, 
@@ -17,12 +19,21 @@ router.get(`/dishes`,
     
     try {
         const listDishes = await getDish(currentPage, limit, filters);
-        //console.log("DO DB PARA ENDPOINT:", listDishes)
+        
+        const formattedDishes = listDishes.data.map(item =>( {
 
+            ...item,
+            listImages: (item.listImages ?? [])
+            .map(img => {
+                const base64 = img.toString("base64");
+                return `data:image/webp;base64,${base64}`
+            })
+        }));
+        
         const totalItems =  listDishes.totalItems;
 
         res.status(200).json({
-            data: listDishes.data,
+            data: formattedDishes,
             pagination: {
                 totalPages: Number(Math.ceil(totalItems / limit)),
                 currentPage:  Number(currentPage),
@@ -41,22 +52,21 @@ router.get(`/dishes`,
 });
 
 
-router.post(`/dish`, async (req, res) => {
+router.post(`/dish`, upload.none(), async (req, res) => {
     const form = {
-        name: req.name ,
-        price: req.price,
-        description: req.description,
-        createdAt: req.createdAt,
-        isActive: req.isActive,
-        categoryId: req.categoryId,
-        tagsId: req.tagsId,
-        ingredientsId: req.ingredientsId,
+        name: req.body.name,
+        price: req.body.price,
+        description: req.body.description,
+        createdAt: req.body.createdAt,
+        isActive: req.body.isActive,
+        categoryId: req.body.categoryId,
+        tagsId:  JSON.parse(req.body.tagsId),
+        ingredientsId:  JSON.parse(req.body.ingredientsId),
     }
 
-    console.log("FORM PARA SALVAR: ", form)
     try {
-        const sendForm =  await createDish(form);
-
+        const sendForm =  await createDish(form);        
+ 
         res.status(200).json({
             data: sendForm,
             message: "Prato adicionado com sucesso"
