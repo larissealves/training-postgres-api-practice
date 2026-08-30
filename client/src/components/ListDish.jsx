@@ -182,7 +182,7 @@ export function ListDish() {
         <div className="min-h-screen bg-gray-100 p-3 sm:p-4">
 
             {/* ================= BOTÃO FORM ================= */}
-            <div className="mx-auto mb-3 flex max-w-4xl justify-end">
+            <div className="mx-auto mb-3 flex  justify-end">
                 <button
                     type="button"
                     onClick={() => setShowForm((prev) => !prev)}
