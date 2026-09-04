@@ -6,6 +6,8 @@ import tagRoutes from "./routes/tag.js";
 import ingredientsRoutes from "./routes/ingredients.js";
 import categoriesRoutes from './routes/categories.js'
 
+import loginRoutes from './routes/login/login.js'
+
 const port = 3000;
 const hostname = "0.0.0.0";
 
@@ -18,6 +20,8 @@ app.use('/api', dishRoutes);
 app.use('/api', tagRoutes);
 app.use('/api', ingredientsRoutes);
 app.use('/api', categoriesRoutes);
+
+app.use('/api', loginRoutes);
 
 
 

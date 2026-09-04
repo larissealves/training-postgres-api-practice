@@ -158,8 +158,14 @@ export default function ListDish() {
         setCurrentPage(1);
     }
 
+    const testeLogin = async () => {
+        const api = await fetch(`http://127.0.0.1:3000/api/login?userName=${'larisse'}&userPassword=${'larisse'}`)
+        console.log("LOGIIIIIN", await api.json());
+    };
+
     useEffect(() => {
         fetchDropdowns();
+        testeLogin();
     }, []);
 
     useEffect(() => {
