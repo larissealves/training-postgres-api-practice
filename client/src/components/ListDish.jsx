@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PDFDownloadLink } from "@react-pdf/renderer";
+
+import Login from './login/form.jsx';
 import ListDishPDF from './ListDishPDF.jsx';
 
 export default function ListDish() {
@@ -73,7 +75,6 @@ export default function ListDish() {
                 fetch(`http://127.0.0.1:3000/api/dishes?tags=${filterByTags}&ingredients=${filterByingredients}&category=${filters.category}&name=${filterByName}&currentPage=${currentPage}&limit=${PAGINATION_LIMIT}`),
             ]);
             const data = await dataListDish.json();
-            console.log(data);
             setListDish(data.data);
             setCurrentPage(data.pagination.currentPage);
             setPaginationTotalPages(data.pagination.totalPages);
@@ -160,7 +161,6 @@ export default function ListDish() {
 
     const testeLogin = async () => {
         const api = await fetch(`http://127.0.0.1:3000/api/login?userName=${'larisse'}&userPassword=${'larisse'}`)
-        console.log("LOGIIIIIN", await api.json());
     };
 
     useEffect(() => {
@@ -189,6 +189,7 @@ export default function ListDish() {
     return (
 
         <div className="min-h-screen bg-gray-100 p-3 sm:p-4">
+            <Login />
             {/* ================= BOTÃO FORM ================= */}
             <div className="mx-auto mb-3 flex  justify-end gap-4">
                 <button
@@ -821,6 +822,7 @@ export default function ListDish() {
                                         item.listImages.map((img, index) => (
 
                                             <img
+                                                key={index}
                                                 src={img}
                                                 alt={`${item.dishName} - imagem ${index + 1}`}
                                                 className="h-full w-full object-cover"
