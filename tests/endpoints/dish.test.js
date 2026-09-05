@@ -1,6 +1,6 @@
 test("Test endpoint - getDish() - No filters", async () => {
     const response = await fetch(
-        "http://127.0.0.1:3000/api/dishes"
+        "http://localhost:3000/api/dishes"
     );
 
     expect(response.status).toBe(200);
@@ -19,7 +19,7 @@ test("Test endpoint - getDish() - No filters", async () => {
 
 test("Test endpoint - getDish() - All Filters", async () => {
     const response = await fetch(
-        `http://127.0.0.1:3000/api/dishes?
+        `http://localhost:3000/api/dishes?
             tags=${1,2}
             &ingredients=${3,4}
             &category=${5}

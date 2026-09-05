@@ -19,21 +19,22 @@ export async function checklogin(name, password) {
     try {
         const result = await pool.query(
         `
-        SELECT name, password 
+        SELECT name, password, "isActive" 
         FROM login 
         WHERE name=$1 
         `, [name]
         );
 
-        if (result.rows.length === 0) {
+        const user = result.rows[0];
+
+        if (result.rows.length === 0 || user.isActive === false) {
             return false;
         }
 
-        const user = result.rows[0].password;
-        
-        const isValid =  await validatePasswordHash(password, user);
+        const isValid =  await validatePasswordHash(password, user.password);
+        const data = {logginValid: isValid, name: user.name}
 
-        return isValid;
+        return data;
     } catch (error) {
         console.log('erro ao checar o login: ', error)
         throw error;
