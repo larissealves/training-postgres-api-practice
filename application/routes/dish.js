@@ -51,8 +51,7 @@ router.get(`/dishes`,
 
 });
 
-
-router.post(`/dish`, upload.none(), async (req, res) => {
+router.post(`/dishes`, upload.none(), async (req, res) => {
     const form = {
         name: req.body.name,
         price: req.body.price,

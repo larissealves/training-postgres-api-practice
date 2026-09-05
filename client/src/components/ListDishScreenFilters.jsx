@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 
 export default function ListDishScreenFilters() {
-
+    const ENDPOINT = 'http://localhost:3000/api/';
+    
     const [listDish, setListDish] = useState([]);
     const [listTags, setListTags] = useState([]);
     const [listIngredients, setListIngredients] = useState([]);
@@ -25,9 +26,9 @@ export default function ListDishScreenFilters() {
     const fetchDropdowns = async () => {
         try {
             const [tags, ingredients, categories] = await Promise.all([
-                fetch(`http://localhost:3000/api/tags`),
-                fetch(`http://localhost:3000/api/ingredients`),
-                fetch(`http://localhost:3000/api/categories`),
+                fetch(`${ENDPOINT}tags`),
+                fetch(`${ENDPOINT}ingredients`),
+                fetch(`${ENDPOINT}categories`),
             ]);
 
             const dataTags = await tags.json();
@@ -51,7 +52,7 @@ export default function ListDishScreenFilters() {
             const filterByingredients = filters.ingredients?.length && filters.ingredients[0] > 0 ? filters.ingredients.join(",") : '';
 
             const [dataListDish] = await Promise.all([
-                fetch(`http://localhost:3000/api/dishes?tags=${filterByTags}&ingredients=${filterByingredients}&category=${filters.category}&name=${filterByName}&currentPage=${currentPage}&limit=${PAGINATION_LIMIT}`),
+                fetch(`${ENDPOINT}dishes?tags=${filterByTags}&ingredients=${filterByingredients}&category=${filters.category}&name=${filterByName}&currentPage=${currentPage}&limit=${PAGINATION_LIMIT}`),
             ]);
             const data = await dataListDish.json();
             console.log(data);

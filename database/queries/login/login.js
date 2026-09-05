@@ -1,4 +1,4 @@
-import pool from '../../../config/pgConnectionLogin.js';
+import pool from '../../config/pgConnectionLogin.js';
 import argon2 from 'argon2';
 
 function generatePassword(password){

@@ -20,8 +20,7 @@ const app = express();
 
 app.use(express.json());
 
-const allowedOrigins =
-    'http://localhost:5173';
+const allowedOrigins = 'http://localhost:5173';
 
 app.use(cors({
     origin: allowedOrigins,
@@ -52,7 +51,6 @@ app.use('/api', categoriesRoutes);
 app.use('/api', loginRoutes);
 
 app.get('/api/me', (req, res) => {
-    console.log("SESSION api/me: ", req.session);
     if (!req.session.user) {
         return res.status(401).json({
             user: '',

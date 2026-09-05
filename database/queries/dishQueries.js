@@ -1,4 +1,4 @@
-import pool from '../../config/pgConnection.js';
+import pool from '../config/pgConnection.js';
 
 export async function getDish(currentPage = 1, limit = 3, filters = {}) {
 
