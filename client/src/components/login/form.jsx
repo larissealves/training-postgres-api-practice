@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "../../hooks/context/AuthContext";
 
 export default function Login() {
 
@@ -9,9 +10,9 @@ export default function Login() {
         password: '',
     });
 
-    const [userValid, setUserValid] = useState("false");
     const [alertMessage, setAlertMessage] = useState("");
 
+    const { setUser } = useAuth();
     const [loading, setLoading] = useState(false);
 
     const checkForm = () => {
@@ -44,11 +45,10 @@ export default function Login() {
 
         if (!sendRequest.ok || !result.loginIsValid) {
             setAlertMessage('Usuário não pode loggar. Verifique o cadastro.');
-            setUserValid(false);
             return;
         }
 
-        setUserValid(result.loginIsValid);
+        setUser(result.user);
         setForm({ name: '', password: '' });
 
     } catch (error) {

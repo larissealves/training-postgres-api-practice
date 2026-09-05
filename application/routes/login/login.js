@@ -12,18 +12,11 @@ router.post('/login', async (req, res) => {
 
         if (!login.logginValid) {
             return res.status(401).json({
-                data: '',
+                user: '',
                 loginIsValid: false,
                 message: "Usuário inválido ou desativado."
             });
         }
-
-        console.log('login:', login)
-        const loginIsValid = res.status(200).json({
-            data: '',
-            loginIsValid: login.logginValid,
-            message: 'Login realizado'
-        });
 
         req.session.user = login.name;
 
@@ -35,9 +28,16 @@ router.post('/login', async (req, res) => {
                     message: 'Erro ao salvar sessão.'
                 });
             }
-        })
+        });
 
-        return loginIsValid;
+        
+        const data = res.status(200).json({
+            user: login.name,
+            loginIsValid: login.logginValid,
+            message: 'Login realizado'
+        });
+
+        return data;
 
     } catch (error) {
         console.log('Error ao checar login: ', error.message);

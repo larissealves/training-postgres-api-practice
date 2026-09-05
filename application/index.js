@@ -55,12 +55,14 @@ app.get('/api/me', (req, res) => {
     console.log("SESSION api/me: ", req.session);
     if (!req.session.user) {
         return res.status(401).json({
+            user: '',
             message: 'Não autenticado'
         });
     }
 
     res.json({
-        user: req.session.user
+        user: req.session.user,
+        message: '',
     });
 });
 

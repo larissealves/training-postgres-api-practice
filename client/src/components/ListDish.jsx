@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 
+import { useAuth } from "../hooks/context/AuthContext.jsx";
+
 import Login from './login/form.jsx';
 import ListDishPDF from './ListDishPDF.jsx';
 
 export default function ListDish() {
     const ENDPOINT = 'http://localhost:3000/api/';
 
+    const { user } = useAuth();
+    
     const [listDish, setListDish] = useState([]);
     const [listTags, setListTags] = useState([]);
     const [listIngredients, setListIngredients] = useState([]);
@@ -44,16 +48,7 @@ export default function ListDish() {
     });
 
     const [filterName, setFilterName] = useState();
-    const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        const checkLogin = async () => {
-            const nemsei = await fetch(`http://localhost:3000/api/me`, {
-                credentials: 'include'
-            });
-        }
-        checkLogin();
-    }, []);
 
     const fetchDropdowns = async () => {
         try {
@@ -200,7 +195,7 @@ export default function ListDish() {
     return (
 
         <div className="min-h-screen bg-gray-100 p-3 sm:p-4">
-            <Login />
+            {!user ?  (<Login />) : `${user}`}
             {/* ================= BOTÃO FORM ================= */}
             <div className="mx-auto mb-3 flex  justify-end gap-4">
                 <button
