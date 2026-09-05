@@ -6,6 +6,7 @@ import Login from './login/form.jsx';
 import ListDishPDF from './ListDishPDF.jsx';
 
 export default function ListDish() {
+    const ENDPOINT = 'http://localhost:3000/api/';
 
     const [listDish, setListDish] = useState([]);
     const [listTags, setListTags] = useState([]);
@@ -43,13 +44,23 @@ export default function ListDish() {
     });
 
     const [filterName, setFilterName] = useState();
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const checkLogin = async () => {
+            const nemsei = await fetch(`http://localhost:3000/api/me`, {
+                credentials: 'include'
+            });
+        }
+        checkLogin();
+    }, []);
 
     const fetchDropdowns = async () => {
         try {
             const [tags, ingredients, categories] = await Promise.all([
-                fetch(`http://127.0.0.1:3000/api/tags`),
-                fetch(`http://127.0.0.1:3000/api/ingredients`),
-                fetch(`http://127.0.0.1:3000/api/categories`),
+                fetch(`http://localhost:3000/api/tags`),
+                fetch(`http://localhost:3000/api/ingredients`),
+                fetch(`http://localhost:3000/api/categories`),
             ]);
 
             const dataTags = await tags.json();
@@ -72,7 +83,7 @@ export default function ListDish() {
             const filterByingredients = filters.ingredients?.length && filters.ingredients[0] > 0 ? filters.ingredients.join(",") : '';
 
             const [dataListDish] = await Promise.all([
-                fetch(`http://127.0.0.1:3000/api/dishes?tags=${filterByTags}&ingredients=${filterByingredients}&category=${filters.category}&name=${filterByName}&currentPage=${currentPage}&limit=${PAGINATION_LIMIT}`),
+                fetch(`http://localhost:3000/api/dishes?tags=${filterByTags}&ingredients=${filterByingredients}&category=${filters.category}&name=${filterByName}&currentPage=${currentPage}&limit=${PAGINATION_LIMIT}`),
             ]);
             const data = await dataListDish.json();
             setListDish(data.data);
@@ -121,7 +132,7 @@ export default function ListDish() {
 
         try {
             const res = await fetch(`
-                http://127.0.0.1:3000/api/dish`,
+                http://localhost:3000/api/dish`,
                 {
                     method: "POST",
                     body: form,
@@ -160,7 +171,7 @@ export default function ListDish() {
     }
 
     const testeLogin = async () => {
-        const api = await fetch(`http://127.0.0.1:3000/api/login?userName=${'larisse'}&userPassword=${'larisse'}`)
+        const api = await fetch(`http://localhost:3000/api/login?userName=${'larisse'}&userPassword=${'larisse'}`)
     };
 
     useEffect(() => {

@@ -13,10 +13,13 @@
     "start": "node --env-file=../.env.production index.js"
   },
   "dependencies": {
+    "connect-redis": "^10.0.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "multer": "^2.3.0",
     "pg": "^8.23.0",
-    "pg-connection-string": "^2.14.0"
+    "pg-connection-string": "^2.14.0",
+    "redis": "^6.2.1"
   }
 }
